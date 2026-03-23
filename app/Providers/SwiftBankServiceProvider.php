@@ -7,12 +7,6 @@ use Illuminate\Support\ServiceProvider;
 use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use Modules\SwiftBank\Telegram\CallbackHandler;
-use Modules\SwiftBank\Telegram\SwiftBankCommand;
-use Modules\Telegram\Services\Handlers\CallbackHandler as TelegramCallbackHandler;
-use Modules\Telegram\Services\Handlers\CommandDispatcher;
-use Modules\Telegram\Services\Support\InlineKeyboardBuilder;
-use Modules\Telegram\Services\Support\TelegramApi;
 
 class SwiftBankServiceProvider extends ServiceProvider
 {
@@ -40,21 +34,6 @@ class SwiftBankServiceProvider extends ServiceProvider
     ) {
       $this->registerHooks($class);
     }
-
-    if ($this->app->bound(CommandDispatcher::class)) {
-      $dispatcher = $this->app->make(CommandDispatcher::class);
-
-      $this->registerTelegramCommands($dispatcher);
-    } else {
-      \Log::warning(
-        "Telegram CommandDispatcher not bound. Skipping command registration.",
-      );
-    }
-
-    if ($this->app->bound(TelegramCallbackHandler::class)) {
-      $callback = $this->app->make(TelegramCallbackHandler::class);
-      $this->registerCallbackHandlers($callback);
-    }
   }
 
   /**
@@ -81,28 +60,6 @@ class SwiftBankServiceProvider extends ServiceProvider
     $hookService::registerHook(
       config($this->nameLower . ".hook.name"),
       $this->nameLower."::hooks.app"
-    );
-  }
-
-  protected function registerTelegramCommands(
-    CommandDispatcher $dispatcher,
-  ): void {
-    $dispatcher->registerCommand(
-      new SwiftBankCommand(
-        $this->app->make(TelegramApi::class),
-        $this->app->make(InlineKeyboardBuilder::class)
-      ),
-    );
-  }
-
-  protected function registerCallbackHandlers(
-    TelegramCallbackHandler $callback,
-  ): void {
-    $callback->registerHandler(
-      new CallbackHandler(
-        $this->app->make(TelegramApi::class),
-        $this->app->make(InlineKeyboardBuilder::class),
-      ),
     );
   }
 
