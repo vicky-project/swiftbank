@@ -140,7 +140,7 @@ class CallbackHandler extends BaseCallbackHandler
         "callback_data" => [
           "value" => $item->country_code,
           "action" => "content",
-          "params" => [[$item->city]]
+          "params" => [$item->city]
         ],
       ];
     })
