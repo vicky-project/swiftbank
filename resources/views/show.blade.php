@@ -219,8 +219,10 @@
   searchForm.addEventListener("submit", showSpinner);
   resetSearch.addEventListener("click", showSpinner);
 
+  document.addEventListener("DOMContentLoaded", function() {
   document.querySelectorAll('.pagination a').forEach(link => {
   link.addEventListener('click', showSpinner);
+  });
   });
 </script>
 @endpush
