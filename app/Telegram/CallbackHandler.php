@@ -79,9 +79,10 @@ class CallbackHandler extends BaseCallbackHandler
     switch ($action) {
     case "country":
       $cities = SwiftBank::where('country_code', $countryCode)
+      ->select('city', 'country_code')
+      ->distinct()
       ->orderBy('city')
-      ->get()
-      ->unique('city');
+      ->get();
 
       $message = "*{$this->getCountryName($countryCode)}*\n\nPilih kota:\n";
 
