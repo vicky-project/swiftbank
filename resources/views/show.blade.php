@@ -29,7 +29,7 @@
                 <i class="bi bi-search"></i> Cari
               </button>
               @if($search)
-              <a href="{{ route('apps.swift.show', $countryCode) }}" class="btn btn-outline-secondary">
+              <a href="{{ route('apps.swift.show', $countryCode) }}" class="btn btn-outline-secondary" id="resetSearch">
                 <i class="bi bi-x-lg"></i> Reset
               </a>
               @endif
@@ -111,6 +111,7 @@
 <script>
   const spinner = document.getElementById('loadingSpinner');
   const searchForm = document.getElementById('searchForm');
+  const resetSearch = document.getElementById('resetSearch');
 
   function showSpinner() {
     spinner.style.display = 'flex';
@@ -151,6 +152,7 @@
   }
 
   searchForm.addEventListener("submit", showSpinner)
+  resetSearch.addEventListener("click", showSpinner)
 
   document.querySelectorAll('.pagination a').forEach(link => {
   link.addEventListener('click', showSpinner);
