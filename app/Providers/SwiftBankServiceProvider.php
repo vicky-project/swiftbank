@@ -27,6 +27,13 @@ class SwiftBankServiceProvider extends ServiceProvider
     $this->registerConfig();
     $this->registerViews();
     $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
+
+    if (
+      config($this->nameLower . ".hook.enabled", false) &&
+      class_exists($class = config($this->nameLower . ".hook.service"))
+    ) {
+      $this->registerHooks($class);
+    }
   }
 
   /**
@@ -46,6 +53,14 @@ class SwiftBankServiceProvider extends ServiceProvider
     $this->commands([
       \Modules\SwiftBank\Console\FetchSwiftData::class
     ]);
+  }
+
+  protected function registerHooks($hookService): void
+  {
+    $hookService::registerHook(
+      config($this->nameLower . ".hook.name"),
+      $this->nameLower."::hooks.app"
+    );
   }
 
   /**
@@ -130,8 +145,6 @@ class SwiftBankServiceProvider extends ServiceProvider
     $this->publishes([$sourcePath => $viewPath], ['views', $this->nameLower.'-module-views']);
 
     $this->loadViewsFrom(array_merge($this->getPublishableViewPaths(), [$sourcePath]), $this->nameLower);
-
-    Blade::componentNamespace(config('modules.namespace').'\\' . $this->name . '\\View\\Components', $this->nameLower);
   }
 
   /**
