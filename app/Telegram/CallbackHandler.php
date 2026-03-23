@@ -79,7 +79,7 @@ class CallbackHandler extends BaseCallbackHandler
     switch ($action) {
     case "country":
       $cities = SwiftBank::where('country_code', $countryCode)
-      ->select('city')
+      ->select(['city', 'country_code'])
       ->distinct()
       ->orderBy('city')
       ->get();
