@@ -2,6 +2,7 @@
 namespace Modules\SwiftBank\Telegram;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 use Modules\SwiftBank\Models\SwiftBank;
 use Modules\Telegram\Services\Support\InlineKeyboardBuilder;
 use Modules\Telegram\Services\Support\TelegramApi;
