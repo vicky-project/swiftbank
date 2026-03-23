@@ -29,7 +29,7 @@
                 <i class="bi bi-search"></i> Cari
               </button>
               @if($search)
-              <a href="{{ route('apps.swift.show', $countryCode) }}" class="btn btn-outline-secondary">
+              <a href="{{ route('apps.swift.show', $countryCode) }}" class="btn btn-outline-secondary" id="resetSearch">
                 <i class="bi bi-x-lg"></i> Reset
               </a>
               @endif
