@@ -8,5 +8,5 @@ Route::prefix('apps')
 ->middleware(['web', 'telegram.miniapp'])
 ->group(function () {
   Route::get('', [SwiftBankController::class, 'index'])->names('swift');
-  Route::get('/country/{countryCode}', [SwiftBankController::class, 'show'])->names('swift.show');
+  Route::get('/country/{countryCode}', [SwiftBankController::class, 'show'])->name('swift.show');
 });
