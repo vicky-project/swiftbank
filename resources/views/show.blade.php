@@ -21,7 +21,7 @@
         </div>
         <div class="card-body">
           <!-- Form pencarian -->
-          <form method="GET" action="{{ route('apps.swift.show', $countryCode) }}" class="mb-3">
+          <form method="GET" action="{{ route('apps.swift.show', $countryCode) }}" class="mb-3" id="searchForm">
             <input type="hidden" name="initData" value="{{ request()->get('initData') }}">
             <div class="input-group">
               <input type="text" name="search" class="form-control" placeholder="Cari bank, swift code, atau kota..." value="{{ $search }}">
@@ -38,7 +38,7 @@
 
           <!-- Menampilkan hasil pencarian -->
           @if($banks->total() > 0)
-          <div class="text-muted small mb-2">
+          <div class="text-muted small mb-4">
             Menampilkan {{ $banks->firstItem() }} - {{ $banks->lastItem() }} dari {{ $banks->total() }} bank
           </div>
           @endif
@@ -98,6 +98,13 @@
     </div>
   </div>
 </div>
+
+<!-- Loading Overlay Spinner -->
+<div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+  <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+    <span class="visually-hidden">Loading...</span>
+  </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -120,6 +127,19 @@
   }
   });
   });
+
+  const spinner = document.getElementById('loadingSpinner');
+  const searchForm = document.getElementById('searchForm');
+
+  function showSpinner() {
+    spinner.style.display = 'flex';
+  }
+
+  searchForm.addEventListener("submit", showSpinner)
+
+  document.querySelectorAll('.pagination a').forEach(link => {
+  link.addEventListener('click', showSpinner);
+  })
 </script>
 @endpush
 

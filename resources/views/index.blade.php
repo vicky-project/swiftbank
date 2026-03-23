@@ -28,7 +28,7 @@
           <div id="countryList">
             @foreach($countries as $country)
             <a href="{{ route('apps.swift.show', $country['code']) }}" class="text-decoration-none">
-              <div class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded-3 border-0" style="background-color: var(--tg-theme-section-bg-color);">
+              <div class="list-group-item d-flex justify-content-between align-items-center mb-2 rounded-3 border-0 p-2" style="background-color: var(--tg-theme-section-bg-color);">
                 <div>
                   <strong>{{ $country['name'] }}</strong>
                   <div class="small text-muted">
