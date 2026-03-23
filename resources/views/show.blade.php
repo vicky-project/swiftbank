@@ -66,7 +66,7 @@
                         </div>
                         <div class="text-end">
                           <span class="badge bg-primary fs-6 swift-code" id="swift-{{ $bank->id }}">{{ $bank->swift_code }}</span>
-                          <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" data-clipboard-text="{{ $bank->swift_code }}">
+                          <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" onclick="copyToClipboard({{ $bank->swift_code }})">
                             <i class="bi bi-clipboard"></i>
                           </button>
                         </div>
@@ -109,30 +109,45 @@
 
 @push('scripts')
 <script>
-  // Copy to clipboard functionality
-  document.querySelectorAll('.copy-btn').forEach(button => {
-  button.addEventListener('click', async function() {
-  const text = this.getAttribute('data-clipboard-text');
-  try {
-  await navigator.clipboard.writeText(text);
-  // Tampilkan feedback singkat
-  const originalHtml = this.innerHTML;
-  this.innerHTML = '<i class="bi bi-check-lg"></i>';
-  setTimeout(() => {
-  this.innerHTML = originalHtml;
-  }, 1500);
-  } catch (err) {
-  console.error('Failed to copy:', err);
-  alert('Gagal menyalin. Silakan salin manual.');
-  }
-  });
-  });
-
   const spinner = document.getElementById('loadingSpinner');
   const searchForm = document.getElementById('searchForm');
 
   function showSpinner() {
     spinner.style.display = 'flex';
+  }
+
+  // ================== COPY TO CLIPBOARD ==================
+  function fallbackCopy(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed'; // Hindari scroll ke bawah
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        showToast ? showToast(`Kode ${text} disalin`, 'success'): alert(`Kode ${text} disalin`);
+      } else {
+        throw new Error('Fallback copy gagal');
+      }
+    } catch (err) {
+      showToast ? showToast('Gagal menyalin', 'danger'): alert('Gagal menyalin');
+    }
+    document.body.removeChild(textarea);
+  }
+
+  function copyToClipboard(text) {
+    if (!navigator.clipboard) {
+      fallbackCopy(text);
+      return;
+    } else {
+      navigator.clipboard.writeText(text).then(() => {
+      showToast(`Kode ${text} disalin`, 'success') || alert(`Kode ${text} disalin`);
+      }).catch(err => {
+      fallbackCopy(text);
+      });
+    }
   }
 
   searchForm.addEventListener("submit", showSpinner)
