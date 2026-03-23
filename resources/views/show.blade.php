@@ -20,22 +20,37 @@
           <small>Kode SWIFT Bank</small>
         </div>
         <div class="card-body">
-          <div class="position-relative mb-3">
-            <input type="text" id="searchBank" class="form-control" placeholder="Cari bank, swift code, atau kota...">
-            <button id="clearSearch" class="btn btn-link position-absolute end-0 top-0 text-muted d-none" style="padding: 0.375rem 0.75rem;">
-              <i class="bi bi-x-lg"></i>
-            </button>
+          <!-- Form pencarian -->
+          <form method="GET" action="{{ route('apps.swift.show', $countryCode) }}" class="mb-3">
+            <div class="input-group">
+              <input type="text" name="search" class="form-control" placeholder="Cari bank, swift code, atau kota..." value="{{ $search }}">
+              <button class="btn btn-outline-primary" type="submit">
+                <i class="bi bi-search"></i> Cari
+              </button>
+              @if($search)
+              <a href="{{ route('apps.swift.show', $countryCode) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-lg"></i> Reset
+              </a>
+              @endif
+            </div>
+          </form>
+
+          <!-- Menampilkan hasil pencarian -->
+          @if($banks->total() > 0)
+          <div class="text-muted small mb-2">
+            Menampilkan {{ $banks->firstItem() }} - {{ $banks->lastItem() }} dari {{ $banks->total() }} bank
           </div>
+          @endif
 
           <div id="banksContainer">
-            @foreach($grouped as $city => $banks)
-            <div class="city-group mb-4" data-city="{{ $city }}">
+            @forelse($grouped as $city => $banksInCity)
+            <div class="city-group mb-4">
               <h5 class="border-start border-3 border-primary ps-3 mb-3">
                 <i class="bi bi-building me-2"></i>{{ $city ?: 'Kota tidak diketahui' }}
               </h5>
               <div class="row g-3">
-                @foreach($banks as $bank)
-                <div class="col-md-12 bank-item" data-name="{{ strtolower($bank->bank_name) }}" data-code="{{ strtolower($bank->swift_code) }}" data-city="{{ strtolower($bank->city) }}">
+                @foreach($banksInCity as $bank)
+                <div class="col-md-12 bank-item">
                   <div class="card h-100 border-0" style="background-color: var(--tg-theme-section-bg-color);">
                     <div class="card-body">
                       <div class="d-flex justify-content-between align-items-start">
@@ -49,7 +64,10 @@
                           </div>
                         </div>
                         <div class="text-end">
-                          <span class="badge bg-primary fs-6">{{ $bank->swift_code }}</span>
+                          <span class="badge bg-primary fs-6 swift-code" id="swift-{{ $bank->id }}">{{ $bank->swift_code }}</span>
+                          <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" data-clipboard-text="{{ $bank->swift_code }}">
+                            <i class="bi bi-clipboard"></i>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -58,16 +76,22 @@
                 @endforeach
               </div>
             </div>
-            @endforeach
+            @empty
+            <div class="text-center py-5">
+              <i class="bi bi-search fs-1 text-muted"></i>
+              <p class="mt-2 text-muted">
+                Tidak ditemukan bank yang cocok
+              </p>
+            </div>
+            @endforelse
           </div>
 
-          <!-- Pesan jika tidak ada hasil -->
-          <div id="noResult" class="text-center py-5 d-none">
-            <i class="bi bi-search fs-1 text-muted"></i>
-            <p class="mt-2 text-muted">
-              Tidak ditemukan bank yang cocok
-            </p>
+          <!-- Pagination links -->
+          @if($banks->hasPages())
+          <div class="d-flex justify-content-center mt-4">
+            {{ $banks->links() }}
           </div>
+          @endif
         </div>
       </div>
     </div>
@@ -77,64 +101,36 @@
 
 @push('scripts')
 <script>
-  const searchInput = document.getElementById('searchBank');
-  const clearBtn = document.getElementById('clearSearch');
-  const bankItems = document.querySelectorAll('.bank-item');
-  const cityGroups = document.querySelectorAll('.city-group');
-  const noResultDiv = document.getElementById('noResult');
-
-  function filterBanks() {
-    const keyword = searchInput.value.toLowerCase().trim();
-    let visibleCount = 0;
-
-    cityGroups.forEach(group => {
-    let groupVisible = false;
-    const banksInGroup = group.querySelectorAll('.bank-item');
-    banksInGroup.forEach(bank => {
-    const name = bank.getAttribute('data-name') || '';
-    const code = bank.getAttribute('data-code') || '';
-    const city = bank.getAttribute('data-city') || '';
-    const matches = keyword === '' || name.includes(keyword) || code.includes(keyword) || city.includes(keyword);
-    if (matches) {
-    bank.style.display = '';
-    groupVisible = true;
-    visibleCount++;
-    } else {
-    bank.style.display = 'none';
-    }
-    });
-    // Tampilkan/sembunyikan seluruh group berdasarkan apakah ada bank yang terlihat
-    group.style.display = groupVisible ? '' : 'none';
-    });
-
-    // Tampilkan pesan "tidak ditemukan" jika tidak ada hasil
-    if (visibleCount === 0 && keyword !== '') {
-      noResultDiv.classList.remove('d-none');
-    } else {
-      noResultDiv.classList.add('d-none');
-    }
-
-    clearBtn.classList.toggle('d-none', keyword === '');
+  // Copy to clipboard functionality
+  document.querySelectorAll('.copy-btn').forEach(button => {
+  button.addEventListener('click', async function() {
+  const text = this.getAttribute('data-clipboard-text');
+  try {
+  await navigator.clipboard.writeText(text);
+  // Tampilkan feedback singkat
+  const originalHtml = this.innerHTML;
+  this.innerHTML = '<i class="bi bi-check-lg"></i>';
+  setTimeout(() => {
+  this.innerHTML = originalHtml;
+  }, 1500);
+  } catch (err) {
+  console.error('Failed to copy:', err);
+  alert('Gagal menyalin. Silakan salin manual.');
   }
-
-  searchInput.addEventListener('keyup', filterBanks);
-  clearBtn.addEventListener('click', () => {
-  searchInput.value = '';
-  filterBanks();
-  searchInput.focus();
+  });
   });
 </script>
 @endpush
 
 @push('styles')
 <style>
-  .city-group {
+  .copy-btn {
     transition: all 0.2s;
   }
-  .bank-item {
-    transition: all 0.2s;
+  .copy-btn:active {
+    transform: scale(0.95);
   }
-  .badge {
+  .swift-code {
     font-family: monospace;
     letter-spacing: 0.5px;
   }

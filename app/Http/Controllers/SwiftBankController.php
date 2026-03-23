@@ -19,10 +19,9 @@ class SwiftBankController extends Controller
     ->get()
     ->map(function ($item) {
       // Nama negara dari country_code (fallback jika tidak ada)
-      $name = $this->getCountryName($item->country_code);
       return [
         'code' => $item->country_code,
-        'name' => $name,
+        'name' => $this->getCountryName($item->country_code),
       ];
     });
 
@@ -32,19 +31,30 @@ class SwiftBankController extends Controller
   /**
   * Tampilkan daftar bank untuk suatu negara, dikelompokkan berdasarkan kota.
   */
-  public function show($countryCode) {
+  public function show(Request $request, $countryCode) {
     $countryCode = strtoupper($countryCode);
-    $banks = SwiftBank::where('country_code', $countryCode)
-    ->orderBy('city')
+    $search = $request->get("search", "");
+    $perPage = 20;
+    $query = SwiftBank::where('country_code', $countryCode);
+    if (!empty($search)) {
+      $query->where(function($q) use($search) {
+        $q->where("bank_name", "LIKE", "%{$search}%")
+        ->orWhere("swift_code", "LIKE", "%{$search}%")
+        ->orWhere("city", "LIKE", "%{$search}%")
+        ->orWhere("branch", "LIKE", "%{$search}%");
+      });
+    }
+
+    $banks = $query->orderBy('city')
     ->orderBy('bank_name')
-    ->get();
+    ->paginate($perPage)->appends(["search" => $search])->withQueryString();
 
     // Kelompokkan berdasarkan kota
     $grouped = $banks->groupBy('city');
 
     $countryName = $this->getCountryName($countryCode);
 
-    return view('swiftbank::show', compact('countryCode', 'countryName', 'grouped'));
+    return view('swiftbank::show', compact('countryCode', 'countryName', 'grouped', 'banks', 'search'));
   }
 
   /**
