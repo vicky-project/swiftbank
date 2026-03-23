@@ -93,7 +93,7 @@ class SwiftBankCommand extends BaseCommandHandler
         "text" => $item["name"],
         "callback_data" => [
           "value" => $item['code'],
-          "action" => "content",
+          "action" => "country",
         ],
       ];
     })
