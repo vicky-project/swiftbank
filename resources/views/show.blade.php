@@ -23,6 +23,7 @@
         <div class="card-body">
           <!-- Form pencarian -->
           <form method="GET" action="{{ route('apps.swift.show', $countryCode) }}" class="mb-3" id="searchForm">
+            <input type="hidden" name="initData" value="{{ request()->get('initData') }}">
             <div class="input-group">
               <input type="text" name="search" class="form-control" placeholder="Cari bank, swift code, atau kota..." value="{{ $search }}">
               <button class="btn btn-outline-primary" type="submit">
@@ -114,6 +115,8 @@
     color: var(--tg-theme-text-color);
   }
   .card {
+    background-color: var(--tg-theme-secondary-bg-color);
+    border: none;
     transition: transform 0.2s, box-shadow 0.2s;
   }
   .card:hover {
