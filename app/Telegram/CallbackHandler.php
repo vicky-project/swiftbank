@@ -83,6 +83,7 @@ class CallbackHandler extends BaseCallbackHandler
       ->distinct()
       ->orderBy('city')
       ->get();
+      Log::debug("List of city", $cities->toArray());
 
       $message = "*{$this->getCountryName($countryCode)}*\n\nPilih kota:\n";
 
