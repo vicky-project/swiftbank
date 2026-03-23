@@ -5,6 +5,7 @@ namespace Modules\SwiftBank\Http\Controllers;
 use Illuminate\Routing\Controller;
 use Modules\SwiftBank\Models\SwiftBank;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class SwiftBankController extends Controller
 {
@@ -13,16 +14,18 @@ class SwiftBankController extends Controller
   */
   public function index() {
     // Ambil daftar negara unik (country_code dan nama negara)
-    $countries = SwiftBank::select('country_code')
-    ->distinct()
-    ->orderBy('country_code')
-    ->get()
-    ->map(function ($item) {
-      // Nama negara dari country_code (fallback jika tidak ada)
-      return [
-        'code' => $item->country_code,
-        'name' => $this->getCountryName($item->country_code),
-      ];
+    $countries = Cache::remember(config('swiftbank.cache_prefix') . 'country', now()->addDays(), function() {
+      return SwiftBank::select('country_code')
+      ->distinct()
+      ->orderBy('country_code')
+      ->get()
+      ->map(function ($item) {
+        // Nama negara dari country_code (fallback jika tidak ada)
+        return [
+          'code' => $item->country_code,
+          'name' => $this->getCountryName($item->country_code),
+        ];
+      });
     });
 
     return view('swiftbank::index', compact('countries'));
@@ -34,27 +37,45 @@ class SwiftBankController extends Controller
   public function show(Request $request, $countryCode) {
     $countryCode = strtoupper($countryCode);
     $search = $request->get("search", "");
+    $page = $request->get("page", 1);
     $perPage = 20;
-    $query = SwiftBank::where('country_code', $countryCode);
-    if (!empty($search)) {
-      $query->where(function($q) use($search) {
-        $q->where("bank_name", "LIKE", "%{$search}%")
-        ->orWhere("swift_code", "LIKE", "%{$search}%")
-        ->orWhere("city", "LIKE", "%{$search}%")
-        ->orWhere("branch", "LIKE", "%{$search}%");
-      });
-    }
 
-    $banks = $query->orderBy('city')
-    ->orderBy('bank_name')
-    ->paginate($perPage)->appends(["search" => $search])->withQueryString();
+    $cacheKey = config('swiftbank.cache_prefix') . "show_{$countryCode}_{$search}_{$page}_{$perPage}";
 
-    // Kelompokkan berdasarkan kota
-    $grouped = $banks->groupBy('city');
+    $data = Cache::remember($cacheKey, now()->addDays(), function() use ($countryCode, $search, $page, $perPage) {
+      $query = SwiftBank::where('country_code', $countryCode);
+
+      if (!empty($search)) {
+        $query->where(function($q) use($search) {
+          $q->where("bank_name", "LIKE", "%{$search}%")
+          ->orWhere("swift_code", "LIKE", "%{$search}%")
+          ->orWhere("city", "LIKE", "%{$search}%")
+          ->orWhere("branch", "LIKE", "%{$search}%");
+        });
+      }
+
+      // Kelompokkan berdasarkan kota
+      $banks = $query->orderBy('city')
+      ->orderBy('bank_name')
+      ->paginate($perPage, ["*"], "page", $page)
+      ->appends(["search" => $search])
+      ->withQueryString();
+
+      $grouped = $banks->groupBy('city');
+
+      return [
+        "banks" => $banks,
+        "grouped" => $grouped
+      ];
+    });
+
+    $banks = $data["banks"];
+    $grouped = $data["grouped"];
 
     $countryName = $this->getCountryName($countryCode);
 
-    return view('swiftbank::show', compact('countryCode', 'countryName', 'grouped', 'banks', 'search'));
+    return view('swiftbank::show',
+      compact('countryCode', 'countryName', 'grouped', 'banks', 'search'));
   }
 
   /**
