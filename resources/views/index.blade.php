@@ -74,6 +74,47 @@
 
 @push('styles')
 <style>
+  /* Menggunakan tema Telegram */
+  body {
+    background-color: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+  }
+  .card {
+    background-color: var(--tg-theme-secondary-bg-color);
+    border: none;
+  }
+  .card-header {
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+    border-bottom: none;
+  }
+  .btn-primary {
+    background-color: var(--tg-theme-button-color);
+    border-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+  }
+  .btn-outline-primary {
+    color: var(--tg-theme-button-color);
+    border-color: var(--tg-theme-button-color);
+  }
+  .btn-outline-primary:hover {
+    background-color: var(--tg-theme-button-color);
+    color: var(--tg-theme-button-text-color);
+  }
+  .btn-outline-secondary {
+    color: var(--tg-theme-hint-color);
+    border-color: var(--tg-theme-hint-color);
+  }
+  .btn-outline-secondary:hover {
+    background-color: var(--tg-theme-hint-color);
+    color: var(--tg-theme-button-text-color);
+  }
+  .text-muted {
+    color: var(--tg-theme-hint-color) !important;
+  }
+  .spinner-border {
+    color: var(--tg-theme-button-color) !important;
+  }
   .list-group-item {
     transition: background-color 0.2s;
   }
