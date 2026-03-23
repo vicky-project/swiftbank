@@ -136,8 +136,9 @@ class CallbackHandler extends BaseCallbackHandler
       return [
         "text" => $item->city,
         "callback_data" => [
-          "value" => $item->country_code . "|City:". $item->city,
+          "value" => $item->city,
           "action" => "content",
+          "params" => $item->country_code
         ],
       ];
     })
