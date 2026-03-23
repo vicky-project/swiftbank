@@ -90,7 +90,7 @@ class SwiftBankServiceProvider extends ServiceProvider
     $dispatcher->registerCommand(
       new SwiftBankCommand(
         $this->app->make(TelegramApi::class),
-        $this->app->make(InlineKeyboardBuilder::class),
+        $this->app->make(InlineKeyboardBuilder::class)
       ),
     );
   }
@@ -100,7 +100,8 @@ class SwiftBankServiceProvider extends ServiceProvider
   ): void {
     $callback->registerHandler(
       new CallbackHandler(
-        $this->app->make(TelegramApi::class)
+        $this->app->make(TelegramApi::class),
+        $this->app->make(InlineKeyboardBuilder::class),
       ),
     );
   }
