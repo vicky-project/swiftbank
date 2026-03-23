@@ -79,7 +79,7 @@ class CallbackHandler extends BaseCallbackHandler
     switch ($action) {
     case "country":
       $cities = SwiftBank::where('country_code', $countryCode)
-      ->select('city', 'country_code')
+      ->select('city')
       ->distinct()
       ->orderBy('city')
       ->get();
@@ -99,16 +99,17 @@ class CallbackHandler extends BaseCallbackHandler
       ];
 
     case "content":
-      $contents = $this->objectcodeService->getContentById($id);
+      $contents = SwiftBank::where("city", $params[0])->where("country_code", $countryCode)->get();
+
       if (!$contents) {
         return ["success" => false,
           "status" => "swiftbank_content_failed"];
       }
 
-      $message = "*{$contents["name"]}*\n\n";
+      $message = "*{$params['0']} - {$countryCode}*\n\n";
 
-      foreach ($contents["contents"] as $content) {
-        $message .= "● `{$content->code}` - {$content->description}\n";
+      foreach ($contents as $content) {
+        $message .= "● `{$content->code}` - {$content->bank_name}\n";
       }
 
       $message .= "\n\nnote: _tekan kode untuk menyalin_";
@@ -136,9 +137,9 @@ class CallbackHandler extends BaseCallbackHandler
       return [
         "text" => $item->city,
         "callback_data" => [
-          "value" => $item->city,
+          "value" => $item->country_code,
           "action" => "content",
-          "params" => [$item->country_code]
+          "params" => [$item->city]
         ],
       ];
     })
