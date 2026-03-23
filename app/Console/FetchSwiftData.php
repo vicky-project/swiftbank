@@ -5,7 +5,7 @@ namespace Modules\SwiftBank\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Modules\CoreUI\Traits\FileDownloader;
-use App\Models\SwiftBank;
+use Modules\SwiftBank\Models\SwiftBank;
 use JsonMachine\JsonDecoder\ExtJsonDecoder;
 use JsonMachine\Items;
 
