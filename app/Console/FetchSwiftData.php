@@ -56,7 +56,7 @@ class FetchSwiftData extends Command
       $progressBar->start();
 
       // 3. Proses insert dalam transaksi
-      DB::transaction(function () use ($tempFile, $progressBar) {
+      DB::transaction(function () use ($tempFile, $progressBar, $totalBanks) {
         SwiftBank::truncate();
 
         $buffer = [];
@@ -85,6 +85,7 @@ class FetchSwiftData extends Command
 
             if (count($buffer) >= $this->chunkSize) {
               SwiftBank::insert($buffer);
+              unset($buffer);
               $buffer = [];
               $progressBar->advance($this->chunkSize);
             }
@@ -129,17 +130,6 @@ class FetchSwiftData extends Command
       'decoder' => new ExtJsonDecoder(true)
     ]);
 
-    foreach ($items as $key => $value) {
-      // Mengembalikan data metadata
-      return [
-        'source' => $value['source'] ?? null,
-        'last_updated' => $value['last_updated'] ?? null,
-        'total_countries' => $value['total_countries'] ?? 0,
-        'total_banks' => $value['total_banks'] ?? 0,
-        'countries_available' => $value['countries_available'] ?? [],
-      ];
-    }
-
-    return [];
+    return $items ?? [];
   }
 }
