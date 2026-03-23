@@ -90,7 +90,7 @@ class SwiftBankCommand extends BaseCommandHandler
     $items = $data
     ->map(function ($item) {
       return [
-        "text" => $item->name,
+        "text" => $item["name"],
         "callback_data" => [
           "value" => $item['code'],
           "action" => "content",
