@@ -66,7 +66,7 @@
                         </div>
                         <div class="text-end">
                           <span class="badge bg-primary fs-6 swift-code" id="swift-{{ $bank->id }}">{{ $bank->swift_code }}</span>
-                          <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" onclick="copyToClipboard({{ $bank->swift_code }})">
+                          <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" onclick="copyToClipboard('{{ $bank->swift_code }}')">
                             <i class="bi bi-clipboard"></i>
                           </button>
                         </div>
