@@ -1,0 +1,11 @@
+{
+    "name": "SwiftBank",
+    "alias": "swiftbank",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\SwiftBank\\Providers\\SwiftBankServiceProvider"
+    ],
+    "files": []
+}
