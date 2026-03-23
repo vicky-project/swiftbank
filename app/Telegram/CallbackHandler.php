@@ -138,7 +138,7 @@ class CallbackHandler extends BaseCallbackHandler
         "callback_data" => [
           "value" => $item->city,
           "action" => "content",
-          "params" => ["country" => $item->country_code]
+          "params" => [$item->country_code]
         ],
       ];
     })
