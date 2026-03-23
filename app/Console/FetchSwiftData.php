@@ -130,6 +130,6 @@ class FetchSwiftData extends Command
       'decoder' => new ExtJsonDecoder(true)
     ]);
 
-    return $items ?? [];
+    return iterator_to_array($items) ?? [];
   }
 }
