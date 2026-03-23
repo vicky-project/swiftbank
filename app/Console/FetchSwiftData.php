@@ -51,13 +51,13 @@ class FetchSwiftData extends Command
 
       $this->info('📖 Processing JSON stream...');
 
-      // 2. Buat progress bar dengan total banks
-      $progressBar = $this->output->createProgressBar($totalBanks);
-      $progressBar->start();
+      SwiftBank::truncate();
 
       // 3. Proses insert dalam transaksi
-      DB::transaction(function () use ($tempFile, $progressBar, $totalBanks) {
-        SwiftBank::truncate();
+      DB::transaction(function () use ($tempFile, $totalBanks) {
+        // 2. Buat progress bar dengan total banks
+        $progressBar = $this->output->createProgressBar($totalBanks);
+        $progressBar->start();
 
         $buffer = [];
         $processed = 0;
@@ -103,11 +103,12 @@ class FetchSwiftData extends Command
         if ($remaining > 0) {
           $progressBar->advance($remaining);
         }
+
+        // 4. Selesai, tutup progress bar dan tampilkan pesan sukses
+        $progressBar->finish();
+        $this->newLine();
       });
 
-      // 4. Selesai, tutup progress bar dan tampilkan pesan sukses
-      $progressBar->finish();
-      $this->newLine();
       $this->info('🎉 SWIFT bank data imported successfully!');
 
     } catch (\Exception $e) {
