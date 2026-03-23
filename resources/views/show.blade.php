@@ -216,11 +216,11 @@
     }
   }
 
-  searchForm.addEventListener("submit", showSpinner)
-  resetSearch.addEventListener("click", showSpinner)
+  searchForm.addEventListener("submit", showSpinner);
+  resetSearch.addEventListener("click", showSpinner);
 
   document.querySelectorAll('.pagination a').forEach(link => {
   link.addEventListener('click', showSpinner);
-  })
+  });
 </script>
 @endpush
