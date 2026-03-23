@@ -15,7 +15,7 @@ class SwiftBankCommand extends BaseCommandHandler
 
   public function __construct(
     TelegramApi $telegram,
-    InlineKeyboardBuilder $inlineKeyboard,
+    InlineKeyboardBuilder $inlineKeyboard
   ) {
     parent::__construct($telegram);
     $this->inlineKeyboard = $inlineKeyboard;

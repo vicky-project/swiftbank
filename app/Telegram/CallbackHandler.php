@@ -3,15 +3,20 @@ namespace Modules\SwiftBank\Telegram;
 
 use Illuminate\Support\Facades\Log;
 use Modules\SwiftBank\Models\SwiftBank;
+use Modules\Telegram\Services\Support\InlineKeyboardBuilder;
 use Modules\Telegram\Services\Support\TelegramApi;
 use Modules\Telegram\Services\Handlers\Callbacks\BaseCallbackHandler;
 
 class CallbackHandler extends BaseCallbackHandler
 {
+  protected InlineKeyboardBuilder $inlineKeyboard;
+
   public function __construct(
     TelegramApi $telegramApi,
+    InlineKeyboardBuilder $inlineKeyboard
   ) {
     parent::__construct($telegramApi);
+    $this->inlineKeyboard = $inlineKeyboard;
   }
 
   public function getModuleName(): string
@@ -50,13 +55,12 @@ class CallbackHandler extends BaseCallbackHandler
     try {
       $entity = $data["entity"];
       $action = $data["action"];
-      $id = $data["id"] ?? null;
+      $countryCode = $data["id"] ?? null;
       $params = $data["params"] ?? [];
-      Log::debug("Proses callback swift bank.", ["action" => $action, "entity" => $entity, "id" => $id, "params" => $params]);
 
       switch ($entity) {
         case "swiftbank":
-          return $this->handleObject($action, $id, $params);
+          return $this->handleObject($action, $countryCode, $params);
 
         default:
           return [];
@@ -66,12 +70,27 @@ class CallbackHandler extends BaseCallbackHandler
     }
   }
 
-  private function handleObject(string $action, int $id, array $params): array
+  private function handleObject(string $action, string $countryCode, array $params): array
   {
+    $countryCode = strtoupper($countryCode);
+    Log::debug("Swift bank callback.", ["action" => $action, "country_code" => $countryCode, "params" => $params]);
+
     switch ($action) {
     case "country":
-      Log::debug("Get country action of swift bank", ["action" => $action, "id" => $id, "params" => $params]);
-      return [];
+      $cities = SwiftBank::where('country_code', $countryCode)->orderBy('city')->get();
+      $message = "*{$this->getCountryName($countryCode)}*\n\nPilih kota:\n";
+
+      $keyboards = $this->prepareKeyboard($cities);
+
+      return [
+        "success" => true,
+        "status" => "swiftbank_cities_sent",
+        "edit_message" => [
+          "text" => $message,
+          "reply_markup" => ["inline_keyboard" => $keyboards],
+          "parse_mode" => "MarkdownV2"
+        ]
+      ];
 
     case "content":
       $contents = $this->objectcodeService->getContentById($id);
@@ -100,6 +119,27 @@ class CallbackHandler extends BaseCallbackHandler
         "status" => "no_action_found"];
     }
   }
+
+  private function prepareKeyboard(Collection $data): array
+  {
+    $this->inlineKeyboard->setModule("swiftbank");
+    $this->inlineKeyboard->setEntity("swiftbank");
+
+    $items = $data
+    ->map(function ($item) {
+      return [
+        "text" => $item->city,
+        "callback_data" => [
+          "value" => $item->code . "|city:". $item->city,
+          "action" => "content",
+        ],
+      ];
+    })
+    ->toArray();
+
+    return $this->inlineKeyboard->grid($items, 2);
+  }
+
 
   /**
   * Helper untuk mendapatkan nama negara dari kode.
