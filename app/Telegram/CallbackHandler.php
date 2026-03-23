@@ -52,6 +52,7 @@ class CallbackHandler extends BaseCallbackHandler
       $action = $data["action"];
       $id = $data["id"] ?? null;
       $params = $data["params"] ?? [];
+      Log::debug("Proses callback swift bank.", ["action" => $action, "entity" => $entity, "id" =>$id,"params" => $params]);
 
       switch ($entity) {
         case "swiftbank":
