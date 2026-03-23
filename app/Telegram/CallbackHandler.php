@@ -110,7 +110,7 @@ class CallbackHandler extends BaseCallbackHandler
       $message = "*{$params['0']} - {$countryCode}*\n\n";
 
       foreach ($contents as $content) {
-        $message .= "● `{$content->code}` - {$content->bank_name}\n";
+        $message .= "● `{$content->swift_code}` - {$content->bank_name}\n";
       }
 
       $message .= "\n\nnote: _tekan kode untuk menyalin_";
