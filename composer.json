@@ -1,5 +1,7 @@
 {
   "name": "vicky-project/swiftbank-module",
+  "type": "laravel-module",
+  "license": "MIT",
   "description": "",
   "authors": [{
     "name": "Vicky Rahman",

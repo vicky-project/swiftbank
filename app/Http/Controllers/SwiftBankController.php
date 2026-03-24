@@ -2,55 +2,118 @@
 
 namespace Modules\SwiftBank\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use Illuminate\Routing\Controller;
+use Modules\SwiftBank\Models\SwiftBank;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class SwiftBankController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        return view('swiftbank::index');
-    }
+  /**
+  * Tampilkan daftar negara yang tersedia.
+  */
+  public function index() {
+    // Ambil daftar negara unik (country_code dan nama negara)
+    $countries = Cache::remember(config('swiftbank.cache_prefix') . 'country', now()->addDays(), function() {
+      return SwiftBank::select('country_code')
+      ->distinct()
+      ->orderBy('country_code')
+      ->get()
+      ->map(function ($item) {
+        // Nama negara dari country_code (fallback jika tidak ada)
+        return [
+          'code' => $item->country_code,
+          'name' => $this->getCountryName($item->country_code),
+        ];
+      });
+    });
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        return view('swiftbank::create');
-    }
+    return view('swiftbank::index', compact('countries'));
+  }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request) {}
+  /**
+  * Tampilkan daftar bank untuk suatu negara, dikelompokkan berdasarkan kota.
+  */
+  public function show(Request $request, $countryCode) {
+    $countryCode = strtoupper($countryCode);
+    $search = $request->get("search", "");
+    $page = $request->get("page", 1);
+    $perPage = 20;
 
-    /**
-     * Show the specified resource.
-     */
-    public function show($id)
-    {
-        return view('swiftbank::show');
-    }
+    $cacheKey = config('swiftbank.cache_prefix') . "show_{$countryCode}_{$search}_{$page}_{$perPage}";
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit($id)
-    {
-        return view('swiftbank::edit');
-    }
+    $data = Cache::remember($cacheKey, now()->addDays(), function() use ($countryCode, $search, $page, $perPage) {
+      $query = SwiftBank::where('country_code', $countryCode);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, $id) {}
+      if (!empty($search)) {
+        $query->where(function($q) use($search) {
+          $q->where("bank_name", "LIKE", "%{$search}%")
+          ->orWhere("swift_code", "LIKE", "%{$search}%")
+          ->orWhere("city", "LIKE", "%{$search}%")
+          ->orWhere("branch", "LIKE", "%{$search}%");
+        });
+      }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id) {}
+      // Kelompokkan berdasarkan kota
+      $banks = $query->orderBy('city')
+      ->orderBy('bank_name')
+      ->paginate($perPage, ["*"], "page", $page)
+      ->appends(["search" => $search])
+      ->withQueryString();
+
+      $grouped = $banks->groupBy('city');
+
+      return [
+        "banks" => $banks,
+        "grouped" => $grouped
+      ];
+    });
+
+    $banks = $data["banks"];
+    $grouped = $data["grouped"];
+
+    $countryName = $this->getCountryName($countryCode);
+
+    return view('swiftbank::show',
+      compact('countryCode', 'countryName', 'grouped', 'banks', 'search'));
+  }
+
+  /**
+  * Helper untuk mendapatkan nama negara dari kode.
+  * Bisa menggunakan library atau array statis.
+  */
+  private function getCountryName($code) {
+    $countries = [
+      'ID' => 'Indonesia',
+      'US' => 'United States',
+      'JP' => 'Japan',
+      'GB' => 'United Kingdom',
+      'AU' => 'Australia',
+      'DE' => 'Germany',
+      'FR' => 'France',
+      'CN' => 'China',
+      'IN' => 'India',
+      'TH' => 'Thailand',
+      'KR' => 'South Korea',
+      'CA' => 'Canada',
+      'BR' => 'Brazil',
+      'RU' => 'Russia',
+      'AE' => 'United Arab Emirates',
+      'SA' => 'Saudi Arabia',
+      'NL' => 'Netherlands',
+      'ES' => 'Spain',
+      'AT' => 'Austria',
+      'BE' => 'Belgium',
+      'CH' => 'Switzerland',
+      'IT' => 'Italy',
+      'MX' => 'Mexico',
+      'NG' => 'Nigeria',
+      'NO' => 'Norway',
+      'PL' => 'Poland',
+      'SE' => 'Sweden',
+      'TR' => 'Turkey',
+      'VE' => 'Venezuela',
+    ];
+    return $countries[$code] ?? $code;
+  }
 }

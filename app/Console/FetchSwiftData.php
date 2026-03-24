@@ -1,4 +1,5 @@
 <?php
+
 namespace Modules\SwiftBank\Console;
 
 use Illuminate\Console\Command;
@@ -19,11 +20,11 @@ class FetchSwiftData extends Command
   protected $type = 'swift';
   protected $config = [];
 
-  protected $chunkSize = 1000; // jumlah bank per batch insert
+  protected $chunkSize = 1000;
 
   public function __construct() {
     parent::__construct();
-    ini_set('memory_limit', '512M'); // naikkan untuk parsing JSON besar
+    ini_set('memory_limit', '512M');
     $this->config = [
       'command' => $this,
       'max_retries' => 3,
@@ -43,28 +44,33 @@ class FetchSwiftData extends Command
       $tempFile = $this->downloadData($this->url, null, true, $this->config);
       $this->info('✅ File downloaded: ' . $tempFile);
 
-      // Hitung total negara untuk progress bar (opsional, karena kita tidak tahu jumlah negara)
-      // Kita akan proses langsung dan gunakan progress bar manual.
+      // 1. Baca metadata untuk mendapatkan total banks
+      $metadata = $this->getMetadata($tempFile);
+      $totalBanks = $metadata['total_banks'] ?? 0;
+      $this->info("📊 Total banks to import: {$totalBanks}");
 
       $this->info('📖 Processing JSON stream...');
-      $items = Items::fromFile($tempFile, [
-        'pointer' => '/swift_global/countries',
-        'decoder' => new ExtJsonDecoder(true)
-      ]);
 
-      DB::transaction(function () use ($items) {
-        SwiftBank::truncate(); // bersihkan data lama
+      SwiftBank::truncate();
 
-        $totalBanks = 0;
+      // 3. Proses insert dalam transaksi
+      DB::transaction(function () use ($tempFile, $totalBanks) {
+        // 2. Buat progress bar dengan total banks
+        $progressBar = $this->output->createProgressBar($totalBanks);
+        $progressBar->start();
+
         $buffer = [];
-        $progressBar = $this->output->createProgressBar(); // progress tanpa total awal
+        $processed = 0;
+
+        $items = Items::fromFile($tempFile, [
+          'pointer' => '/swift_global/countries',
+          'decoder' => new ExtJsonDecoder(true)
+        ]);
 
         foreach ($items as $countryCode => $countryData) {
           if (!isset($countryData['list'])) continue;
 
           $banks = $countryData['list'];
-          $progressBar->setMessage("Processing {$countryData['country']} ({$countryCode})");
-
           foreach ($banks as $bank) {
             $buffer[] = [
               'country_code' => $countryCode,
@@ -75,11 +81,11 @@ class FetchSwiftData extends Command
               'created_at' => now(),
               'updated_at' => now(),
             ];
-            $totalBanks++;
+            $processed++;
 
-            // Insert batch jika buffer mencapai chunk size
             if (count($buffer) >= $this->chunkSize) {
               SwiftBank::insert($buffer);
+              unset($buffer);
               $buffer = [];
               $progressBar->advance($this->chunkSize);
             }
@@ -92,12 +98,19 @@ class FetchSwiftData extends Command
           $progressBar->advance(count($buffer));
         }
 
+        // Pastikan progress bar mencapai 100% (mengoreksi jika ada selisih)
+        $remaining = $totalBanks - $progressBar->getProgress();
+        if ($remaining > 0) {
+          $progressBar->advance($remaining);
+        }
+
+        // 4. Selesai, tutup progress bar dan tampilkan pesan sukses
         $progressBar->finish();
         $this->newLine();
-        $this->info("✅ Total banks inserted: {$totalBanks}");
       });
 
       $this->info('🎉 SWIFT bank data imported successfully!');
+
     } catch (\Exception $e) {
       $this->error('❌ Error: ' . $e->getMessage());
       if ($tempFile) $this->cleanupTempFile($tempFile);
@@ -106,5 +119,18 @@ class FetchSwiftData extends Command
 
     if ($tempFile) $this->cleanupTempFile($tempFile);
     return 0;
+  }
+
+  /**
+  * Ambil metadata dari file JSON untuk mendapatkan total banks.
+  */
+  protected function getMetadata($filePath): array
+  {
+    $items = Items::fromFile($filePath, [
+      'pointer' => '/swift_global/metadata',
+      'decoder' => new ExtJsonDecoder(true)
+    ]);
+
+    return iterator_to_array($items) ?? [];
   }
 }

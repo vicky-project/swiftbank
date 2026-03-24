@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use Modules\SwiftBank\Http\Controllers\SwiftBankController;
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('swiftbanks', SwiftBankController::class)->names('swiftbank');
+Route::prefix('apps')
+->name('apps.')
+->middleware(['web', 'telegram.miniapp'])
+->group(function () {
+  Route::get('', [SwiftBankController::class, 'index'])->name('swift');
+  Route::get('/country/{countryCode}', [SwiftBankController::class, 'show'])->name('swift.show');
 });
