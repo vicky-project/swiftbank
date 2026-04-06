@@ -6,7 +6,7 @@
   <div class="row justify-content-center mb-3">
     <div class="col-md-12">
       <div class="d-flex justify-content-between align-items-center">
-        <a href="{{ route('apps.swift') }}" class="btn btn-outline-secondary">
+        <a href="{{ route('apps.swift') }}" class="btn btn-outline-secondary disabled">
           <i class="bi bi-arrow-left me-2"></i>Daftar Negara
         </a>
       </div>
