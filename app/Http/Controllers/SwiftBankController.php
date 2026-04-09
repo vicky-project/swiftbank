@@ -9,10 +9,14 @@ use Illuminate\Support\Facades\Cache;
 
 class SwiftBankController extends Controller
 {
+  public function index() {
+    return view('swiftbank::index');
+  }
+
   /**
   * Tampilkan daftar negara yang tersedia.
   */
-  public function index() {
+  public function countries() {
     // Ambil daftar negara unik (country_code dan nama negara)
     $countries = Cache::remember(config('swiftbank.cache_prefix') . 'country', now()->addDays(), function() {
       return SwiftBank::select('country_code')
@@ -28,13 +32,13 @@ class SwiftBankController extends Controller
       });
     });
 
-    return view('swiftbank::index', compact('countries'));
+    return response()->json($countries);
   }
 
   /**
   * Tampilkan daftar bank untuk suatu negara, dikelompokkan berdasarkan kota.
   */
-  public function show(Request $request, $countryCode) {
+  public function banks(Request $request, $countryCode) {
     $countryCode = strtoupper($countryCode);
     $search = $request->get("search", "");
     $page = $request->get("page", 1);
@@ -74,8 +78,10 @@ class SwiftBankController extends Controller
 
     $countryName = $this->getCountryName($countryCode);
 
-    return view('swiftbank::show',
-      compact('countryCode', 'countryName', 'grouped', 'banks', 'search'));
+    return response()->json([
+      'country_name' => $countryName,
+      'banks' => $banks
+    ]);
   }
 
   /**

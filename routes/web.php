@@ -5,8 +5,6 @@ use Modules\SwiftBank\Http\Controllers\SwiftBankController;
 
 Route::prefix('apps')
 ->name('apps.')
-->middleware(['web', 'telegram.miniapp'])
 ->group(function () {
-  Route::get('', [SwiftBankController::class, 'index'])->name('swift');
-  Route::get('/country/{countryCode}', [SwiftBankController::class, 'show'])->name('swift.show');
+  Route::get('swift', [SwiftBankController::class, 'index'])->name('swift');
 });
