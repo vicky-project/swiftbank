@@ -5,12 +5,6 @@
 @section('content')
 <div class="container py-0" style="max-width:600px; margin:0 auto;">
   <div id="swift-app">
-    <div class="text-center py-5" id="loading-view">
-      <div class="spinner-border text-primary" role="status"></div>
-      <p class="mt-2 text-muted">
-        Memuat daftar negara...
-      </p>
-    </div>
     <div id="countries-view" style="display:none;"></div>
     <div id="banks-view" style="display:none;"></div>
   </div>
