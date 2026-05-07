@@ -4,6 +4,7 @@ namespace Modules\SwiftBank\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\CoreUI\Traits\FileDownloader;
 use Modules\SwiftBank\Models\SwiftBank;
 use JsonMachine\JsonDecoder\ExtJsonDecoder;
@@ -37,6 +38,16 @@ class FetchSwiftData extends Command
   }
 
   public function handle() {
+    // 🔍 Cek apakah tabel swift_banks sudah ada
+    if (!Schema::hasTable('swift_banks')) {
+      $this->error('❌ Tabel "swift_banks" belum tersedia di database.');
+      $this->warn('Silakan jalankan perintah berikut terlebih dahulu:');
+      $this->line('   php artisan migrate');
+      $this->newLine();
+      $this->info('Setelah migrasi berhasil, jalankan kembali command ini.');
+      return 1;
+    }
+
     $this->info('🚀 Fetching SWIFT bank data...');
 
     $tempFile = null;
