@@ -289,7 +289,7 @@
   const saveButtonHtml = window.NotesConfig?.notesAvailable ? `
   <button class="btn btn-sm btn-save-note save-to-notes-btn"
   data-payload="${payloadStr}">
-  <i class="bi bi-journal-plus me-1"></i> Simpan ke Notes
+  <i class="bi bi-journal-plus"></i>
   </button>` : '';
 
   html += `
