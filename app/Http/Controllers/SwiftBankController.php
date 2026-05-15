@@ -6,11 +6,14 @@ use Illuminate\Routing\Controller;
 use Modules\SwiftBank\Models\SwiftBank;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Nwidart\Modules\Facades\Module;
 
 class SwiftBankController extends Controller
 {
   public function index() {
-    return view('swiftbank::index');
+    return view('swiftbank::index', [
+      'notesConfig' => $this->notesJsConfig()
+    ]);
   }
 
   /**
@@ -121,5 +124,15 @@ class SwiftBankController extends Controller
       'VE' => 'Venezuela',
     ];
     return $countries[$code] ?? $code;
+  }
+
+  protected function notesJsConfig(): array
+  {
+    $available = Module::has('Notes') && Module::isEnabled('Notes');
+
+    return [
+      'notesAvailable' => $available,
+      'notesEndpoint' => $available ? secure_url(config('notes.integration.endpoint')) : null
+    ];
   }
 }
