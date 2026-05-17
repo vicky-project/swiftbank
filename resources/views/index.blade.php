@@ -96,10 +96,32 @@
       color: #1a1a1a;
     }
   }
+
+  /* Tombol Simpan ke Notes */
+  .btn-save-note {
+    background: rgba(255, 193, 7, 0.15);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #ffc107;
+    font-size: 0.8rem;
+    padding: 4px 10px;
+    border-radius: 8px;
+    transition: all 0.2s;
+  }
+  .btn-save-note:hover, .btn-save-note:active {
+    background: rgba(255, 193, 7, 0.3);
+    border-color: #ffc107;
+  }
+  .btn-save-note:disabled {
+    opacity: 0.7;
+  }
 </style>
 @endpush
 
 @push('scripts')
+<script>
+  // Fallback jika $notesConfig tidak terdefinisi
+  window.NotesConfig = @json($notesConfig ?? ['notesAvailable' => false, 'notesEndpoint' => null]);
+</script>
 <script>
   (function() {
   const { fetchWithAuth, showToast, showLoading, hideLoading, escapeHtml, renderPagination, copyToClipboard } = window.TelegramApp;
@@ -126,8 +148,7 @@
   </div>
   <div id="countriesList"></div>
   </div>
-  </div>
-  `;
+  </div>`;
   container.innerHTML = html;
   renderCountriesList(allCountries, '');
   document.getElementById('searchCountry').addEventListener('input', (e) => {
@@ -163,8 +184,7 @@
   <div class="small text-muted">${escapeHtml(country.code)}</div>
   </div>
   <i class="bi bi-chevron-right"></i>
-  </div>
-  `;
+  </div>`;
   });
   listContainer.innerHTML = html;
   document.querySelectorAll('.list-group-item[data-code]').forEach(el => {
@@ -196,7 +216,7 @@
 
   function renderBanksView(data, countryCode, page, search) {
   const countryName = data.country_name;
-  const banks = data.banks; // pagination object
+  const banks = data.banks;
   const grouped = banks.data.reduce((acc, bank) => {
   const city = bank.city || 'Kota tidak diketahui';
   if (!acc[city]) acc[city] = [];
@@ -224,8 +244,7 @@
   <div id="banksList"></div>
   <div id="paginationContainer"></div>
   </div>
-  </div>
-  `;
+  </div>`;
   document.getElementById('banks-view').innerHTML = html;
   document.getElementById('countries-view').style.display = 'none';
   document.getElementById('banks-view').style.display = 'block';
@@ -263,15 +282,28 @@
   <div class="row g-3">
   `;
   banks.forEach(bank => {
+  // Bangun payload untuk Notes
+  const payload = buildNotePayload(bank);
+  const payloadStr = JSON.stringify(payload).replace(/"/g, '&quot;').replace(/'/g, "&#39;");
+
+  const saveButtonHtml = window.NotesConfig?.notesAvailable ? `
+  <button class="btn btn-sm btn-save-note save-to-notes-btn"
+  data-payload="${payloadStr}">
+  <i class="bi bi-journal-plus"></i>
+  </button>` : '';
+
   html += `
   <div class="col-12 col-md-6 bank-item">
   <div class="card h-100 border-0 shadow-sm">
   <div class="card-body">
   <div class="d-flex justify-content-between align-items-start mb-2">
   <h6 class="card-title mb-0 fw-bold">${escapeHtml(bank.bank_name)}</h6>
+  <div class="d-flex gap-1">
   <button class="btn btn-sm btn-outline-secondary copy-btn" data-code="${escapeHtml(bank.swift_code)}">
   <i class="bi bi-clipboard"></i>
   </button>
+  ${saveButtonHtml}
+  </div>
   </div>
   <div class="text-muted small mb-2">
   <i class="bi bi-geo-alt"></i> ${escapeHtml(bank.city)}
@@ -282,12 +314,12 @@
   </div>
   </div>
   </div>
-  </div>
-  `;
+  </div>`;
   });
   html += `</div></div>`;
   }
   container.innerHTML = html;
+
   // Attach copy events
   document.querySelectorAll('.copy-btn').forEach(btn => {
   btn.addEventListener('click', (e) => {
@@ -296,7 +328,73 @@
   copyToClipboard(code);
   });
   });
+
+  // Attach save events jika Notes tersedia
+  if (window.NotesConfig?.notesAvailable) {
+  attachSaveButtonListeners(container);
+  }
+
   if (searchTerm) highlightSearch(container, searchTerm);
+  }
+
+  function buildNotePayload(bank) {
+  return {
+  title: `${bank.bank_name} - ${bank.swift_code}`,
+  content: `<p><strong>Bank:</strong> ${bank.bank_name}</p>
+  <p><strong>SWIFT Code:</strong> ${bank.swift_code}</p>
+  <p><strong>Kota:</strong> ${bank.city}</p>
+  ${bank.branch ? `<p><strong>Cabang:</strong> ${bank.branch}</p>` : ''}`,
+  type: 'text',
+  tags: ['swift', 'bank', currentCountryCode, bank.swift_code],
+  source_module: 'SwiftBank',
+  source_id: bank.swift_code,
+  metadata: {
+  bank_name: bank.bank_name,
+  swift_code: bank.swift_code,
+  city: bank.city,
+  branch: bank.branch || null,
+  country_code: currentCountryCode
+  }
+  };
+  }
+
+  function attachSaveButtonListeners(container) {
+  container.querySelectorAll('.save-to-notes-btn').forEach(btn => {
+  btn.addEventListener('click', async function(e) {
+  e.stopPropagation();
+  let payload;
+  try {
+  const str = this.dataset.payload.replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  payload = JSON.parse(str);
+  } catch (err) {
+  showToast('❌ Gagal membaca data bank', 'danger');
+  return;
+  }
+
+  this.disabled = true;
+  const originalHtml = this.innerHTML;
+  this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Menyimpan...';
+
+  try {
+  await fetchWithAuth(window.NotesConfig.notesEndpoint, {
+  method: 'POST',
+  body: JSON.stringify(payload)
+  });
+  showToast('✅ Berhasil disimpan ke Notes!', 'success');
+  this.innerHTML = '<i class="bi bi-check-lg me-1"></i> Tersimpan';
+  this.classList.add('btn-success');
+  setTimeout(() => {
+  this.disabled = false;
+  this.innerHTML = originalHtml;
+  this.classList.remove('btn-success');
+  }, 2000);
+  } catch (err) {
+  showToast('❌ Gagal menyimpan: ' + err.message, 'danger');
+  this.disabled = false;
+  this.innerHTML = originalHtml;
+  }
+  });
+  });
   }
 
   function highlightSearch(container, term) {
@@ -311,5 +409,5 @@
   // Start
   renderCountries();
   })();
-</script>
-@endpush
+  </script>
+  @endpush
